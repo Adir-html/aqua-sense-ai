@@ -1,0 +1,5 @@
+# TODO: add ignore patterns
+.env
+__pycache__/
+node_modules/
+.DS_Store
