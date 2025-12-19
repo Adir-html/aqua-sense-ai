@@ -1,17 +1,8 @@
-<<<<<<< HEAD
-# AquaSense AI 🌱💧
-
-AI-powered detection of irrigation issues using simple images or video — no sensors required.
-
-AquaSense AI helps farmers quickly identify clogged drip lines, leaks, and irrigation failures using computer vision, saving water, time, and crops.
-
----
-
 # AquaSense AI 🌱💧
 
 AI-powered detection of irrigation issues using simple images or short videos — no sensors required.
-AquaSense AI helps farmers quickly identify clogged drip lines, leaks, and irrigation failures using computer
-vision, saving water, time, and crops.
+
+AquaSense AI helps farmers quickly identify clogged drip lines, leaks, and irrigation failures using computer vision, saving water, time, and crops.
 
 ---
 
@@ -57,26 +48,10 @@ This repository currently contains an MVP scaffold and placeholder logic to vali
 
 ---
 
-## Run Locally
+## ▶️ Run Locally (Docker Compose)
 
-1. Copy or edit `.env.example` to `.env` and set any values.
+1. Copy `.env.example` to `.env` and set values if needed.
 2. Build and start services:
 
 ```bash
 docker compose up --build
-```
-
-3. Open the apps:
-
-- Frontend: http://localhost:3000
-- API: http://localhost:8000/docs
-
----
-
-## TODO (MVP checklist)
-
-- [ ] Implement frontend upload UI and results page
-- [ ] Implement FastAPI analyze endpoint and storage
-- [ ] Add AI model runner and inference wiring
-- [ ] Add tests and CI
-- [ ] Add deployment manifests and monitoring

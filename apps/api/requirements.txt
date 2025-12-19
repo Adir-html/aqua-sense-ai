@@ -1,1 +1,5 @@
-# TODO: List python dependencies (placeholder)
+fastapi
+uvicorn[standard]
+python-multipart
+
+# NOTE: Add additional dependencies as needed for AI and storage

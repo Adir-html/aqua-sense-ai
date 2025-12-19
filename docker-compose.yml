@@ -1,1 +1,26 @@
-# TODO: define docker-compose services for web, api, ai
+# Docker Compose configuration for local development
+version: '3.8'
+
+services:
+	web:
+		build:
+			context: ./apps/web
+		ports:
+			- "3000:80"
+		env_file:
+			- .env.example
+		depends_on:
+			- api
+
+	api:
+		build:
+			context: ./apps/api
+		ports:
+			- "8000:8000"
+		env_file:
+			- .env.example
+		restart: unless-stopped
+
+# Notes:
+# - For a simple local setup the AI code can run inside the API container.
+# - Use `docker compose up --build` to start everything.
