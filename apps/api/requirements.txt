@@ -3,6 +3,7 @@ uvicorn[standard]
 python-multipart
 python-dotenv
 requests
+httpx
 psycopg2-binary
 
 # Image processing

@@ -46,8 +46,9 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install -r apps/api/requirements.txt
-          pip install pytest pytest-cov python-dotenv
+          # Install all deps except onnxruntime (large, not needed for unit tests)
+          grep -v onnxruntime apps/api/requirements.txt | pip install -r /dev/stdin
+          pip install pytest pytest-cov python-dotenv httpx
 
       - name: Run unit tests
         working-directory: apps/api

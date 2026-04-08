@@ -3,7 +3,7 @@
 # See: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/displaying-a-sponsor-button-in-your-repository
 
 github:         [Adir-html]
-ko_fi:          YOUR_KO_FI_USERNAME
+# ko_fi:        YOUR_KO_FI_USERNAME  # uncomment and set after creating account at ko-fi.com
 open_collective: aqua-sense-ai
 # patreon:      YOUR_PATREON
 # custom:       ['https://your-donation-page.com']

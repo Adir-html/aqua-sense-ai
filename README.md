@@ -23,7 +23,7 @@
 
 ## 🎥 Demo
 
-> **[➡ Try the live demo](https://YOUR_DEMO_URL)** · [Watch 60-second walkthrough](#)
+> **[➡ Try the live demo](https://aqua-sense-ai.vercel.app)** · [Watch 60-second walkthrough](#)
 
 ![AquaSense AI Dashboard](docs/screenshot.png)
 
@@ -184,7 +184,7 @@ AquaSense AI is free and open source. If it helps you or you believe in its miss
 
 - ⭐ **Star this repo** — it's free and helps more farmers find it
 - 💖 **[Sponsor on GitHub](https://github.com/sponsors/Adir-html)** — fund ongoing development
-- ☕ **[Buy us a coffee](https://ko-fi.com/YOUR_KO_FI)** — one-time support
+- ☕ **[Buy us a coffee](https://ko-fi.com)** — one-time support _(set up a Ko-fi account and update this link)_
 - 📢 **Share it** — post on LinkedIn, Reddit, or with your agricultural network
 - 🤝 **Partner with us** — if you're an agricultural organization or NGO, let's talk
 
@@ -200,7 +200,7 @@ MIT — free to use, modify, and deploy, including commercially. See [LICENSE](L
 
 ## 📬 Contact
 
-Built by **Adir Shohat** · Questions, partnerships, or press: open an [issue](https://github.com/Adir-html/aqua-sense-ai/issues) or reach out on [LinkedIn](https://linkedin.com/in/YOUR_LINKEDIN).
+Built by **Adir Shohat** · Questions, partnerships, or press: open an [issue](https://github.com/Adir-html/aqua-sense-ai/issues) or reach out on [LinkedIn](https://www.linkedin.com/in/adir-shohat-6a3479384/).
 
 ---
 
