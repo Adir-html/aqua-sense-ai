@@ -1,1 +1,628 @@
-<!-- TODO: Add index HTML for web app -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="theme-color" content="#00c9e8" />
+  <link rel="manifest" href="/manifest.json" />
+  <title>AquaSense AI — Agricultural Irrigation Monitor</title>
+
+  <!-- SEO -->
+  <meta name="description" content="AI-powered irrigation diagnostics for farmers. Upload a field photo and instantly detect water quality issues, clogged emitters, leaks, and crop stress — no sensors required." />
+  <meta name="keywords" content="irrigation AI, smart farming, water quality, drip irrigation, precision agriculture, crop health" />
+
+  <!-- Open Graph (Facebook, LinkedIn, WhatsApp) -->
+  <meta property="og:type"        content="website" />
+  <meta property="og:title"       content="AquaSense AI — Irrigation Diagnostics for Farmers" />
+  <meta property="og:description" content="Upload a field photo. Get instant AI analysis of your irrigation system — water quality, leaks, clogged emitters, crop health. Free &amp; open source." />
+  <meta property="og:image"       content="https://YOUR_DEMO_URL/og-image.png" />
+  <meta property="og:url"         content="https://YOUR_DEMO_URL" />
+  <meta property="og:site_name"   content="AquaSense AI" />
+
+  <!-- Twitter / X -->
+  <meta name="twitter:card"        content="summary_large_image" />
+  <meta name="twitter:title"       content="AquaSense AI — Free irrigation AI for farmers" />
+  <meta name="twitter:description" content="Upload a field photo → AI diagnoses irrigation faults in seconds. No sensors, no hardware. Open source." />
+  <meta name="twitter:image"       content="https://YOUR_DEMO_URL/og-image.png" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:        #080f1e;
+      --bg2:       #0c1628;
+      --card:      #0d1f38;
+      --border:    #1a3356;
+      --border2:   #243f60;
+      --teal:      #00c9e8;
+      --teal-lt:   #7fe8f7;
+      --teal-dim:  #00c9e818;
+      --teal-glow: #00c9e840;
+      --green:     #22d860;
+      --green-bg:  #031a0e;
+      --red:       #ff4d4d;
+      --red-bg:    #200808;
+      --amber:     #ffb020;
+      --amber-bg:  #1f1000;
+      --purple:    #a855f7;
+      --white:     #e8f4ff;
+      --grey:      #7a9ab8;
+      --dim:       #3d5a78;
+      --r:         16px;
+      --r-sm:      10px;
+      --shadow:    0 8px 32px #00000066;
+      --shadow-sm: 0 2px 12px #00000044;
+    }
+
+    html { scroll-behavior: smooth; }
+    body { background:var(--bg); color:var(--white); font-family:system-ui,-apple-system,"Segoe UI",sans-serif; min-height:100vh; line-height:1.6; }
+
+    /* ── Header ── */
+    header { background:linear-gradient(135deg,#0a1830,#0d2040); border-bottom:1px solid var(--border); padding:14px 24px; position:sticky; top:0; z-index:200; backdrop-filter:blur(12px); box-shadow:0 2px 24px #00000055; }
+    .header-inner { max-width:1040px; margin:0 auto; display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+    .logo { display:flex; align-items:center; gap:14px; }
+    .logo-icon { width:40px; height:40px; border-radius:12px; background:linear-gradient(135deg,#004d6e,var(--teal)); display:flex; align-items:center; justify-content:center; font-size:1.3rem; box-shadow:0 0 16px var(--teal-glow); animation:logo-pulse 3s ease-in-out infinite; }
+    @keyframes logo-pulse { 0%,100%{box-shadow:0 0 12px var(--teal-glow)} 50%{box-shadow:0 0 24px var(--teal),0 0 8px var(--teal-lt)} }
+    .logo-text h1 { font-size:1.15rem; font-weight:700; }
+    .logo-text p  { font-size:.68rem; color:var(--teal-lt); letter-spacing:.6px; text-transform:uppercase; }
+    .header-right { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+    .engine-badge { font-size:.72rem; padding:6px 14px; border-radius:999px; border:1px solid var(--border2); background:#1a335688; color:var(--grey); transition:all .35s; white-space:nowrap; }
+    .engine-badge.ready     { border-color:var(--green); color:var(--green); background:#031a0e88; }
+    .engine-badge.heuristic { border-color:var(--amber); color:var(--amber); background:#1f100088; }
+    .btn-notif { font-size:.72rem; padding:6px 13px; border-radius:999px; border:1px solid var(--border2); background:transparent; color:var(--grey); cursor:pointer; transition:all .25s; }
+    .btn-notif:hover      { border-color:var(--teal); color:var(--teal); }
+    .btn-notif.active     { border-color:var(--green); color:var(--green); }
+
+    /* ── Layout ── */
+    main { max-width:1040px; margin:0 auto; padding:28px 20px 80px; display:flex; flex-direction:column; gap:22px; }
+
+    /* ── Stats row ── */
+    .stats-bar { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; }
+    @media(max-width:640px){ .stats-bar{ grid-template-columns:repeat(2,1fr); } }
+    .stat-card { background:var(--card); border:1px solid var(--border); border-radius:var(--r); padding:18px 20px; display:flex; align-items:center; gap:14px; transition:transform .2s,box-shadow .2s; box-shadow:var(--shadow-sm); cursor:default; }
+    .stat-card:hover { transform:translateY(-2px); box-shadow:var(--shadow); }
+    .stat-icon { font-size:1.6rem; flex-shrink:0; }
+    .stat-info { display:flex; flex-direction:column; gap:2px; }
+    .stat-num  { font-size:1.9rem; font-weight:800; line-height:1; }
+    .stat-lbl  { font-size:.68rem; color:var(--grey); text-transform:uppercase; letter-spacing:.6px; }
+    .stat-card.danger  { border-color:#ff4d4d44; }
+    .stat-card.warning { border-color:#ffb02044; }
+    .stat-card.good    { border-color:#22d86044; }
+    .stat-card.info    { border-color:#00c9e844; }
+    .num-red   { color:var(--red); }
+    .num-amber { color:var(--amber); }
+    .num-green { color:var(--green); }
+    .num-teal  { color:var(--teal); }
+
+    /* ── Two-column ── */
+    .main-cols { display:grid; grid-template-columns:1fr 1fr; gap:22px; align-items:start; }
+    @media(max-width:720px){ .main-cols{ grid-template-columns:1fr; } }
+
+    /* ── Card ── */
+    .card { background:var(--card); border:1px solid var(--border); border-radius:var(--r); padding:24px; box-shadow:var(--shadow-sm); }
+    .card-title { font-size:.68rem; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:var(--teal-lt); margin-bottom:18px; display:flex; align-items:center; gap:8px; }
+    .card-title::before { content:""; width:3px; height:14px; border-radius:2px; background:linear-gradient(to bottom,var(--teal),var(--teal-lt)); flex-shrink:0; }
+
+    /* ── Drop Zone ── */
+    .drop-zone { border:2px dashed var(--border2); border-radius:var(--r-sm); min-height:170px; cursor:pointer; transition:all .25s; display:flex; flex-direction:column; align-items:center; justify-content:center; position:relative; overflow:hidden; background:var(--bg2); }
+    .drop-zone:hover,.drop-zone.drag-over { border-color:var(--teal); background:var(--teal-dim); box-shadow:inset 0 0 20px var(--teal-dim); }
+    .drop-zone.has-image { border-style:solid; border-color:var(--teal); background:#060e1a; }
+    .drop-inner { display:flex; flex-direction:column; align-items:center; gap:8px; padding:28px 20px; text-align:center; pointer-events:none; }
+    .drop-icon  { font-size:2.6rem; filter:drop-shadow(0 0 8px var(--teal-glow)); }
+    .drop-title { font-size:.92rem; font-weight:600; }
+    .drop-sub   { font-size:.76rem; color:var(--grey); max-width:220px; }
+    .drop-formats { font-size:.67rem; color:var(--dim); margin-top:2px; }
+    #previewContainer { display:none; flex-direction:column; align-items:center; gap:10px; padding:14px; width:100%; }
+    #previewImg { max-height:210px; max-width:100%; border-radius:10px; object-fit:contain; box-shadow:0 4px 16px #00000066; }
+    .btn-sm { font-size:.73rem; padding:5px 14px; border-radius:999px; border:1px solid var(--border2); background:transparent; color:var(--grey); cursor:pointer; transition:all .2s; }
+    .btn-sm:hover { border-color:var(--teal); color:var(--teal); }
+
+    /* ── Upload button row ── */
+    .upload-btn-row { display:flex; gap:10px; margin-top:16px; }
+    .btn-analyze { flex:1; padding:13px; font-size:.92rem; font-weight:700; border-radius:var(--r-sm); border:none; background:linear-gradient(135deg,#006a9e,var(--teal)); color:#fff; cursor:pointer; transition:all .25s; display:flex; align-items:center; justify-content:center; gap:9px; letter-spacing:.3px; }
+    .btn-analyze:hover:not(:disabled) { background:linear-gradient(135deg,#0088cc,#38dff0); transform:translateY(-1px); box-shadow:0 6px 20px var(--teal-glow); }
+    .btn-analyze:active:not(:disabled) { transform:translateY(0); }
+    .btn-analyze:disabled { background:#162840; color:var(--dim); cursor:not-allowed; }
+    .btn-batch { display:inline-flex; align-items:center; padding:13px 16px; border-radius:var(--r-sm); border:1px solid var(--border2); background:transparent; color:var(--grey); cursor:pointer; font-size:.82rem; transition:all .25s; white-space:nowrap; user-select:none; }
+    .btn-batch:hover { border-color:var(--teal); color:var(--teal); background:var(--teal-dim); }
+
+    /* ── Field zone input ── */
+    .field-input-wrap { margin-top:16px; }
+    .field-label { display:flex; justify-content:space-between; align-items:center; font-size:.73rem; color:var(--grey); margin-bottom:6px; }
+    .field-input { width:100%; padding:10px 13px; background:var(--bg2); border:1px solid var(--border2); border-radius:9px; color:var(--white); font-size:.85rem; outline:none; transition:border-color .2s,box-shadow .2s; }
+    .field-input:focus { border-color:var(--teal); box-shadow:0 0 0 3px var(--teal-dim); }
+    .field-input::placeholder { color:var(--dim); }
+
+    /* ── Loading ── */
+    .loading-card { display:none; flex-direction:column; align-items:center; gap:12px; padding:32px 24px; text-align:center; background:var(--card); border:1px solid var(--border); border-radius:var(--r); }
+    .wave { display:flex; gap:5px; align-items:flex-end; height:36px; }
+    .wave-bar { width:5px; border-radius:4px; background:linear-gradient(to top,var(--teal),var(--teal-lt)); animation:wave 1.2s ease-in-out infinite; }
+    .wave-bar:nth-child(1){animation-delay:0s;height:12px}.wave-bar:nth-child(2){animation-delay:.15s;height:22px}.wave-bar:nth-child(3){animation-delay:.30s;height:34px}.wave-bar:nth-child(4){animation-delay:.45s;height:18px}.wave-bar:nth-child(5){animation-delay:.60s;height:10px}
+    @keyframes wave { 0%,100%{transform:scaleY(.3);opacity:.3} 50%{transform:scaleY(1);opacity:1} }
+    .loading-title { font-size:.92rem; font-weight:600; color:var(--teal-lt); }
+    .loading-stage { font-size:.76rem; color:var(--grey); min-height:1.2em; transition:opacity .25s; }
+
+    /* ── Error ── */
+    .error-card { display:none; align-items:flex-start; gap:11px; background:var(--red-bg); border:1px solid #7f1d1d; border-radius:var(--r-sm); padding:13px 16px; color:#fca5a5; font-size:.84rem; line-height:1.5; }
+
+    /* ── Results ── */
+    .results-card { display:none; }
+    .status-banner { display:flex; align-items:center; justify-content:space-between; border-radius:var(--r-sm); padding:16px 18px; margin-bottom:18px; gap:12px; flex-wrap:wrap; }
+    .status-critical { background:linear-gradient(135deg,#1a0505,#220808); border:1.5px solid var(--red); }
+    .status-warning  { background:linear-gradient(135deg,var(--amber-bg),#251400); border:1.5px solid var(--amber); }
+    .status-healthy  { background:linear-gradient(135deg,var(--green-bg),#041f10); border:1.5px solid var(--green); }
+    .status-left { display:flex; align-items:center; gap:12px; }
+    .status-icon  { font-size:1.7rem; }
+    .status-label { font-size:1.1rem; font-weight:800; }
+    .status-label.lbl-critical { color:var(--red); }
+    .status-label.lbl-warning  { color:var(--amber); }
+    .status-label.lbl-healthy  { color:var(--green); }
+    .urgency-pill { font-size:.7rem; padding:5px 13px; border-radius:999px; font-weight:700; letter-spacing:.3px; }
+    .urg-immediate { background:#550000; color:#ffaaaa; border:1px solid #aa0000; }
+    .urg-soon      { background:#2a1800; color:#ffd080; border:1px solid #995500; }
+    .urg-monitor   { background:#0a2a18; color:#80e8a0; border:1px solid #1a6630; }
+    .urg-none      { background:#0a1e38; color:var(--grey); border:1px solid var(--border); }
+    .metric-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-bottom:16px; }
+    @media(max-width:500px){ .metric-grid{ grid-template-columns:repeat(2,1fr); } }
+    .metric-box { background:var(--bg2); border:1px solid var(--border); border-radius:var(--r-sm); padding:13px 14px; }
+    .metric-lbl { font-size:.64rem; color:var(--grey); text-transform:uppercase; letter-spacing:.6px; margin-bottom:4px; }
+    .metric-val { font-size:1.4rem; font-weight:800; }
+    .category-row { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px; align-items:center; }
+    .cat-badge { font-size:.71rem; padding:4px 12px; border-radius:7px; font-weight:600; }
+    .cat-water  { background:#0a2840; border:1px solid #0ea5e9; color:#7dd3fc; }
+    .cat-system { background:#1e1200; border:1px solid var(--amber); color:#fcd34d; }
+    .cat-field  { background:#061e10; border:1px solid #22c55e; color:#86efac; }
+    .cat-crop   { background:#160a28; border:1px solid var(--purple); color:#d8b4fe; }
+    .issues-list { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:14px; }
+    .issue-tag { font-size:.69rem; padding:3px 10px; border-radius:6px; background:#1a3356; border:1px solid var(--border2); color:var(--grey); }
+    .issue-tag.active { background:#2a0808; border-color:#cc2222; color:#fca5a5; }
+    .bar-section { margin-bottom:16px; }
+    .bar-row { display:flex; justify-content:space-between; font-size:.76rem; margin-bottom:5px; }
+    .bar-track { height:7px; background:var(--border); border-radius:999px; overflow:hidden; margin-bottom:10px; }
+    .bar-fill  { height:100%; border-radius:999px; transition:width .9s cubic-bezier(.25,1,.5,1); }
+    .fill-red   { background:linear-gradient(90deg,#aa0000,var(--red)); }
+    .fill-green { background:linear-gradient(90deg,#0a8830,var(--green)); }
+    .msg-box { background:var(--bg2); border:1px solid var(--border); border-left:3px solid var(--teal); border-radius:var(--r-sm); padding:13px 15px; margin-bottom:13px; font-size:.83rem; color:#c8ddf0; line-height:1.55; display:flex; gap:10px; align-items:flex-start; }
+    .impact-box { border-radius:var(--r-sm); padding:12px 15px; margin-bottom:13px; font-size:.83rem; line-height:1.55; display:flex; gap:10px; align-items:flex-start; }
+    .impact-warning { background:var(--amber-bg); border:1px solid #664400; color:#fcd34d; }
+    .impact-ok      { background:var(--green-bg);  border:1px solid #0a5520; color:#86efac; }
+    .rec-box { border-radius:var(--r-sm); padding:13px 15px; margin-bottom:13px; font-size:.83rem; line-height:1.55; display:flex; gap:10px; align-items:flex-start; }
+    .rec-critical { background:#1a0505; border:1px solid #7a1010; color:#fca5a5; }
+    .rec-warning  { background:var(--amber-bg); border:1px solid #664400; color:#fcd34d; }
+    .rec-healthy  { background:var(--green-bg); border:1px solid #0a5520; color:#86efac; }
+    .pills-row { display:flex; gap:7px; flex-wrap:wrap; }
+    .pill { font-size:.67rem; padding:3px 11px; border-radius:999px; border:1px solid var(--border); color:var(--grey); }
+    .pill-engine  { border-color:var(--teal); color:var(--teal); }
+    .pill-dataset { border-color:var(--green); color:var(--green); }
+
+    /* ── Trend chart ── */
+    .trend-card { background:var(--card); border:1px solid var(--border); border-radius:var(--r); padding:24px; box-shadow:var(--shadow-sm); }
+    .trend-canvas-wrap { position:relative; height:190px; }
+
+    /* ── History ── */
+    .history-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
+    .filter-bar { display:flex; align-items:center; gap:9px; flex-wrap:wrap; margin-bottom:16px; }
+    .filter-bar label { font-size:.72rem; color:var(--grey); white-space:nowrap; }
+    .filter-input { padding:7px 11px; background:var(--bg2); border:1px solid var(--border2); border-radius:8px; color:var(--white); font-size:.78rem; outline:none; transition:border-color .2s; }
+    .filter-input:focus { border-color:var(--teal); }
+    .filter-select { padding:7px 11px; background:var(--bg2); border:1px solid var(--border2); border-radius:8px; color:var(--white); font-size:.78rem; outline:none; cursor:pointer; }
+    .filter-select:focus { border-color:var(--teal); }
+    .btn-filter { padding:7px 15px; border-radius:8px; border:1px solid var(--border2); background:transparent; color:var(--grey); font-size:.76rem; cursor:pointer; transition:all .2s; }
+    .btn-filter:hover { border-color:var(--teal); color:var(--teal); background:var(--teal-dim); }
+    .btn-filter.primary { border-color:var(--teal); color:var(--teal); }
+    .btn-export { margin-left:auto; padding:7px 15px; border-radius:8px; border:1px solid var(--border2); background:transparent; color:var(--grey); font-size:.76rem; cursor:pointer; transition:all .2s; }
+    .btn-export:hover { border-color:var(--green); color:var(--green); }
+    .btn-print  { padding:7px 15px; border-radius:8px; border:1px solid var(--border2); background:transparent; color:var(--grey); font-size:.76rem; cursor:pointer; transition:all .2s; }
+    .btn-print:hover { border-color:var(--purple); color:var(--purple); }
+    .history-list { display:flex; flex-direction:column; gap:8px; }
+    .history-item { display:flex; align-items:center; gap:11px; background:var(--bg2); border:1px solid var(--border); border-radius:var(--r-sm); padding:10px 13px; transition:border-color .2s,background .2s,transform .15s; cursor:pointer; }
+    .history-item:hover { border-color:var(--teal); background:#0f1e36; transform:translateX(2px); }
+    .h-thumb { width:46px; height:46px; object-fit:cover; border-radius:8px; flex-shrink:0; border:1px solid var(--border); }
+    .h-info  { flex:1; min-width:0; }
+    .h-top   { display:flex; align-items:center; gap:7px; }
+    .h-name  { font-size:.8rem; font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .h-zone  { font-size:.65rem; color:var(--teal); background:var(--teal-dim); border:1px solid #00c9e844; padding:1px 8px; border-radius:999px; flex-shrink:0; white-space:nowrap; }
+    .h-res   { font-size:.73rem; margin-top:2px; font-weight:500; }
+    .h-crit  { color:var(--red); }
+    .h-warn  { color:var(--amber); }
+    .h-ok    { color:var(--green); }
+    .h-time  { font-size:.65rem; color:var(--dim); margin-top:2px; }
+    .h-status-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+    .dot-critical { background:var(--red);   box-shadow:0 0 6px var(--red); }
+    .dot-warning  { background:var(--amber); box-shadow:0 0 6px var(--amber); }
+    .dot-healthy  { background:var(--green); box-shadow:0 0 6px var(--green); }
+    .btn-delete { margin-left:auto; background:none; border:none; color:var(--dim); cursor:pointer; font-size:.85rem; padding:5px 7px; border-radius:6px; flex-shrink:0; transition:all .15s; }
+    .btn-delete:hover { color:var(--red); background:#2a080844; }
+    .h-conf-bar { height:3px; border-radius:999px; margin-top:5px; transition:width .6s; max-width:100%; }
+    .h-conf-crit { background:linear-gradient(90deg,#880000,var(--red)); }
+    .h-conf-warn { background:linear-gradient(90deg,#885500,var(--amber)); }
+    .h-conf-ok   { background:linear-gradient(90deg,#085520,var(--green)); }
+    .btn-load-more { width:100%; margin-top:12px; padding:10px; background:transparent; border:1px dashed var(--border2); border-radius:var(--r-sm); color:var(--grey); font-size:.78rem; cursor:pointer; transition:all .2s; }
+    .btn-load-more:hover { border-color:var(--teal); color:var(--teal); background:var(--teal-dim); }
+
+    /* ── Skeleton ── */
+    @keyframes shimmer { 0%{background-position:-600px 0} 100%{background-position:600px 0} }
+    .skeleton { background:linear-gradient(90deg,#1a3356 25%,#243f60 50%,#1a3356 75%); background-size:1200px 100%; animation:shimmer 1.6s infinite linear; border-radius:6px; }
+    .skeleton-item { display:flex; align-items:center; gap:11px; background:var(--bg2); border:1px solid var(--border); border-radius:var(--r-sm); padding:10px 13px; }
+    .sk-dot   { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
+    .sk-thumb { width:46px; height:46px; border-radius:8px; flex-shrink:0; }
+    .sk-lines { flex:1; display:flex; flex-direction:column; gap:7px; }
+    .sk-line  { height:10px; border-radius:4px; }
+    .sk-line.w70 { width:70%; }
+    .sk-line.w45 { width:45%; }
+
+    /* ── Batch panel ── */
+    .batch-panel { background:var(--card); border:1px solid var(--border); border-radius:var(--r); padding:20px; margin-top:16px; }
+    .batch-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
+    .batch-progress { font-size:.76rem; color:var(--grey); }
+    .batch-list { display:flex; flex-direction:column; gap:8px; max-height:260px; overflow-y:auto; }
+    .batch-item { display:flex; align-items:center; gap:10px; background:var(--bg2); border:1px solid var(--border); border-radius:8px; padding:9px 12px; font-size:.8rem; }
+    .batch-item .b-name { flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--white); }
+    .batch-item .b-status { font-size:.72rem; padding:2px 9px; border-radius:999px; flex-shrink:0; }
+    .b-pending  { background:#1a3356; color:var(--grey); }
+    .b-running  { background:var(--teal-dim); color:var(--teal); }
+    .b-done-ok  { background:var(--green-bg); color:var(--green); }
+    .b-done-warn{ background:var(--amber-bg); color:var(--amber); }
+    .b-done-crit{ background:var(--red-bg);   color:var(--red); }
+    .b-error    { background:#200808; color:#fca5a5; }
+    .batch-drop-zone { border:2px dashed var(--border2); border-radius:var(--r-sm); padding:14px; text-align:center; font-size:.8rem; color:var(--grey); margin-bottom:12px; transition:all .2s; cursor:default; }
+    .batch-drop-zone.drag-over { border-color:var(--teal); color:var(--teal); background:var(--teal-dim); }
+    .link-btn { background:none; border:none; color:var(--teal); cursor:pointer; font-size:.8rem; text-decoration:underline; padding:0; }
+    .batch-actions { display:flex; gap:10px; margin-top:14px; }
+    .btn-batch-run { flex:1; padding:10px; border-radius:var(--r-sm); border:none; background:linear-gradient(135deg,#006a9e,var(--teal)); color:#fff; font-weight:600; font-size:.85rem; cursor:pointer; transition:all .25s; }
+    .btn-batch-run:hover:not(:disabled) { background:linear-gradient(135deg,#0088cc,#38dff0); }
+    .btn-batch-run:disabled { background:#162840; color:var(--dim); cursor:not-allowed; }
+    .btn-batch-clear { padding:10px 16px; border-radius:var(--r-sm); border:1px solid var(--border2); background:transparent; color:var(--grey); font-size:.85rem; cursor:pointer; transition:all .2s; }
+    .btn-batch-clear:hover { border-color:var(--red); color:var(--red); }
+
+    /* ── Zone dashboard ── */
+    .zone-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:14px; }
+    .zone-card { background:var(--bg2); border:1px solid var(--border); border-radius:var(--r-sm); padding:16px; cursor:pointer; transition:all .2s; position:relative; overflow:hidden; }
+    .zone-card:hover { border-color:var(--teal); transform:translateY(-2px); box-shadow:var(--shadow); }
+    .zone-card.zc-critical { border-color:#ff4d4d55; }
+    .zone-card.zc-warning  { border-color:#ffb02055; }
+    .zone-card.zc-healthy  { border-color:#22d86055; }
+    .zone-name { font-size:.88rem; font-weight:700; margin-bottom:10px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .zone-bars { display:flex; gap:3px; height:6px; border-radius:999px; overflow:hidden; margin-bottom:10px; }
+    .zb-critical { background:var(--red); }
+    .zb-warning  { background:var(--amber); }
+    .zb-healthy  { background:var(--green); }
+    .zone-meta { display:flex; justify-content:space-between; align-items:center; }
+    .zone-total { font-size:.72rem; color:var(--grey); }
+    .zone-last  { font-size:.67rem; color:var(--dim); }
+    .zone-stale { position:absolute; top:10px; right:10px; font-size:.62rem; padding:2px 7px; border-radius:999px; background:var(--amber-bg); color:var(--amber); border:1px solid #66440055; }
+
+    /* ── Detail Modal ── */
+    .modal-overlay { position:fixed; inset:0; background:#00000088; backdrop-filter:blur(6px); z-index:500; display:flex; align-items:center; justify-content:center; padding:20px; animation:fadeIn .2s ease; }
+    .modal-card { background:var(--card); border:1px solid var(--border2); border-radius:var(--r); width:100%; max-width:680px; max-height:90vh; overflow-y:auto; box-shadow:var(--shadow); position:relative; animation:slideUp .25s ease; }
+    @keyframes slideUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+    .modal-header { display:flex; justify-content:space-between; align-items:center; padding:20px 24px 0; margin-bottom:16px; }
+    .modal-title  { font-size:.72rem; font-weight:700; letter-spacing:1px; text-transform:uppercase; color:var(--teal-lt); }
+    .modal-close  { background:none; border:none; color:var(--grey); font-size:1.2rem; cursor:pointer; padding:4px 8px; border-radius:6px; transition:all .2s; line-height:1; }
+    .modal-close:hover { color:var(--white); background:var(--border); }
+    .modal-body   { padding:0 24px 24px; }
+    .modal-img    { width:100%; max-height:240px; object-fit:contain; border-radius:var(--r-sm); margin-bottom:18px; background:#060e1a; }
+    .modal-img-ph { width:100%; height:100px; border-radius:var(--r-sm); background:var(--bg2); border:1px solid var(--border); display:flex; align-items:center; justify-content:center; color:var(--dim); font-size:.8rem; margin-bottom:18px; }
+    .modal-row    { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:14px; }
+    .modal-field  { background:var(--bg2); border:1px solid var(--border); border-radius:8px; padding:11px 13px; }
+    .modal-field-label { font-size:.63rem; color:var(--grey); text-transform:uppercase; letter-spacing:.5px; margin-bottom:3px; }
+    .modal-field-value { font-size:.88rem; font-weight:600; }
+
+    /* ── Toast ── */
+    .toast { position:fixed; bottom:24px; left:50%; transform:translateX(-50%) translateY(20px); background:#1a3a5a; border:1px solid var(--border2); border-radius:999px; color:var(--white); font-size:.82rem; padding:9px 20px; box-shadow:var(--shadow); z-index:9999; opacity:0; pointer-events:none; transition:opacity .25s,transform .25s; white-space:nowrap; }
+    .toast.toast-error { background:var(--red-bg); border-color:#7f1d1d; color:#fca5a5; }
+    .toast.toast-show  { opacity:1; transform:translateX(-50%) translateY(0); }
+
+    /* ── Animations ── */
+    .fade-in { animation:fadeIn .35s ease; }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+
+    /* ── Analyze button ready pulse ── */
+    @keyframes analyze-ready { 0%,100%{box-shadow:0 6px 20px transparent} 50%{box-shadow:0 6px 28px var(--teal-glow),0 0 0 3px #00c9e822} }
+    .btn-analyze.ready { animation:analyze-ready 2s ease-in-out infinite; }
+
+    /* ── Batch progress bar ── */
+    .batch-bar-track { height:3px; background:var(--border); border-radius:999px; overflow:hidden; margin-bottom:14px; }
+    .batch-bar-fill  { height:100%; background:linear-gradient(90deg,var(--teal),var(--teal-lt)); border-radius:999px; width:0%; transition:width .4s ease; }
+
+    /* ── Batch item extras ── */
+    .b-size   { font-size:.66rem; color:var(--dim); flex-shrink:0; white-space:nowrap; }
+    .b-remove { background:none; border:none; color:var(--dim); cursor:pointer; font-size:.78rem; padding:2px 6px; border-radius:4px; flex-shrink:0; transition:all .15s; line-height:1; }
+    .b-remove:hover { color:var(--red); background:#2a080844; }
+
+    /* ── Copy recommendation button ── */
+    .copy-rec-btn { background:none; border:none; color:inherit; opacity:.5; cursor:pointer; font-size:.82rem; padding:2px 6px; border-radius:4px; transition:opacity .15s; flex-shrink:0; }
+    .copy-rec-btn:hover { opacity:1; }
+
+    /* ── Filter active badge ── */
+    .filter-active-badge { font-size:.67rem; padding:2px 9px; border-radius:999px; background:var(--teal-dim); border:1px solid var(--teal); color:var(--teal); white-space:nowrap; }
+
+    /* ── History count badge ── */
+    .history-count { font-size:.72rem; color:var(--grey); font-weight:400; text-transform:none; letter-spacing:0; padding-left:4px; }
+
+    /* ── Preview image fade-in ── */
+    @keyframes imgFadeIn { from{opacity:0;transform:scale(.97)} to{opacity:1;transform:scale(1)} }
+    #previewImg.img-loaded { animation:imgFadeIn .3s ease; }
+
+    /* ── Result card re-trigger flash ── */
+    @keyframes resultFlash { 0%{opacity:.4;transform:translateY(8px)} 100%{opacity:1;transform:translateY(0)} }
+    .results-card.result-flash { animation:resultFlash .35s ease; }
+
+    /* ── Footer ── */
+    footer { text-align:center; padding:20px; color:var(--dim); font-size:.7rem; letter-spacing:.4px; }
+
+    /* ── Mobile ── */
+    @media(max-width:480px) {
+      header { padding:11px 14px; }
+      .logo-text p { display:none; }
+      main { padding:16px 12px 50px; gap:16px; }
+      .card { padding:18px; }
+      .stat-card { padding:14px 16px; }
+      .stat-num { font-size:1.6rem; }
+      .upload-btn-row { flex-direction:column; }
+      .filter-bar { gap:6px; }
+      .filter-input { width:110px; }
+      .btn-export,.btn-print { margin-left:0; width:auto; }
+      .modal-row { grid-template-columns:1fr; }
+      .zone-grid { grid-template-columns:1fr 1fr; }
+    }
+
+    /* ── Print styles ── */
+    @media print {
+      header, .upload-section, .batch-panel, .btn-analyze, .btn-batch, .btn-delete, .btn-load-more, .btn-filter, .btn-export, .btn-print, footer, #loading, #error, .filter-bar, #loadMoreBtn { display:none !important; }
+      body { background:#fff; color:#000; }
+      .card, .trend-card, .stat-card { border:1px solid #ccc; box-shadow:none; break-inside:avoid; }
+      .history-item { break-inside:avoid; }
+      * { color:#000 !important; background:transparent !important; border-color:#ccc !important; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="logo">
+      <div class="logo-icon">🌱</div>
+      <div class="logo-text">
+        <h1>AquaSense AI</h1>
+        <p>Irrigation &amp; Water Quality Monitor</p>
+      </div>
+    </div>
+    <div class="header-right">
+      <button id="notifBtn" class="btn-notif" onclick="toggleNotifications()">🔔 Alerts</button>
+      <div id="engineBadge" class="engine-badge">Connecting…</div>
+    </div>
+  </div>
+</header>
+
+<main>
+
+  <!-- Stats row -->
+  <div class="stats-bar">
+    <div class="stat-card danger">
+      <div class="stat-icon">🔴</div>
+      <div class="stat-info">
+        <div id="statCritical" class="stat-num num-red">—</div>
+        <div class="stat-lbl">Critical</div>
+      </div>
+    </div>
+    <div class="stat-card warning">
+      <div class="stat-icon">⚠️</div>
+      <div class="stat-info">
+        <div id="statWarning" class="stat-num num-amber">—</div>
+        <div class="stat-lbl">Warnings</div>
+      </div>
+    </div>
+    <div class="stat-card good">
+      <div class="stat-icon">✅</div>
+      <div class="stat-info">
+        <div id="statHealthy" class="stat-num num-green">—</div>
+        <div class="stat-lbl">Healthy</div>
+      </div>
+    </div>
+    <div class="stat-card info">
+      <div class="stat-icon">📊</div>
+      <div class="stat-info">
+        <div id="statTotal" class="stat-num num-teal">—</div>
+        <div class="stat-lbl">Total</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Upload + Results -->
+  <div class="main-cols upload-section">
+
+    <!-- Upload card -->
+    <div class="card">
+      <div class="card-title">Upload Field Image</div>
+
+      <div id="dropZone" class="drop-zone" role="button" tabindex="0" aria-label="Upload field image">
+        <div id="dropInner" class="drop-inner">
+          <div class="drop-icon">🌾</div>
+          <p class="drop-title">Drag &amp; drop or tap to upload</p>
+          <p class="drop-sub">Water, soil, crops, emitters, pipes</p>
+          <p class="drop-formats">JPG · PNG · WebP · GIF · up to 10 MB</p>
+        </div>
+        <div id="previewContainer">
+          <img id="previewImg" alt="Preview" />
+          <button id="changeBtn" class="btn-sm">↩ Change image</button>
+        </div>
+        <input id="fileInput" type="file" accept="image/*" style="display:none" />
+      </div>
+
+      <div class="field-input-wrap">
+        <div class="field-label">
+          <span>Field / Zone label <span style="color:var(--dim)">(optional)</span></span>
+          <span id="fieldZoneCounter" style="color:var(--dim);font-size:.68rem">0/80</span>
+        </div>
+        <input id="fieldZoneInput" class="field-input" type="text" list="zoneList"
+               placeholder="e.g. North Field, Block A, Greenhouse 2" maxlength="80"
+               oninput="document.getElementById('fieldZoneCounter').textContent=this.value.length+'/80';document.getElementById('fieldZoneCounter').style.color=this.value.length>=72?'var(--amber)':'var(--dim)'" />
+        <datalist id="zoneList"></datalist>
+      </div>
+
+      <div class="upload-btn-row">
+        <button id="analyzeBtn" class="btn-analyze" disabled>🔬 Analyze Image</button>
+        <label for="batchInput" class="btn-batch" title="Select multiple images (hold Ctrl), or drag &amp; drop onto the upload area">📂 Batch Upload</label>
+      </div>
+
+      <div id="loading" class="loading-card" style="margin-top:16px">
+        <div class="wave">
+          <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+        </div>
+        <p class="loading-title">Analyzing with AI…</p>
+        <p id="loadingStage" class="loading-stage">Inspecting water quality &amp; system components…</p>
+      </div>
+
+      <div id="error" class="error-card" style="margin-top:13px">
+        <span style="flex-shrink:0;font-size:1rem">⚠️</span><span id="errorMsg"></span>
+      </div>
+    </div>
+
+    <!-- Results card -->
+    <div id="results" class="card results-card fade-in">
+      <div class="card-title">Analysis Results</div>
+      <div id="statusBanner" class="status-banner">
+        <div class="status-left">
+          <span id="statusIcon" class="status-icon"></span>
+          <span id="statusLabel" class="status-label"></span>
+        </div>
+        <span id="urgencyPill" class="urgency-pill"></span>
+      </div>
+      <div id="categoryRow" class="category-row" style="display:none">
+        <span id="categoryBadge" class="cat-badge"></span>
+        <div id="issuesList" class="issues-list"></div>
+      </div>
+      <div class="metric-grid">
+        <div class="metric-box"><div class="metric-lbl">Confidence</div><div id="mConf" class="metric-val">—</div></div>
+        <div class="metric-box"><div class="metric-lbl">Area Affected</div><div id="mArea" class="metric-val">—</div></div>
+        <div class="metric-box"><div class="metric-lbl">Water Waste</div><div id="mWaste" class="metric-val">—</div></div>
+      </div>
+      <div class="bar-section">
+        <div class="bar-row"><span style="color:var(--grey);font-size:.73rem">Fault probability</span><span id="faultyPct" style="font-size:.76rem;font-weight:600"></span></div>
+        <div class="bar-track" style="margin-bottom:10px"><div id="faultyBar" class="bar-fill fill-red" style="width:0%"></div></div>
+        <div class="bar-row"><span style="color:var(--grey);font-size:.73rem">Healthy probability</span><span id="normalPct" style="font-size:.76rem;font-weight:600"></span></div>
+        <div class="bar-track"><div id="normalBar" class="bar-fill fill-green" style="width:0%"></div></div>
+      </div>
+      <div class="msg-box"><span style="flex-shrink:0;font-size:1rem">🤖</span><span id="aiMessage">—</span></div>
+      <div id="cropImpact" class="impact-box" style="display:none">
+        <span style="flex-shrink:0;font-size:1rem">🌿</span><span id="cropImpactText"></span>
+      </div>
+      <div id="recBox" class="rec-box" style="display:none">
+        <span id="recIcon" style="flex-shrink:0;font-size:1rem"></span>
+        <span id="recText" style="flex:1"></span>
+        <button id="copyRecBtn" class="copy-rec-btn" title="Copy recommendation" style="display:none">📋</button>
+      </div>
+      <div class="pills-row">
+        <span id="enginePill"  class="pill pill-engine"  style="display:none"></span>
+        <span id="datasetPill" class="pill pill-dataset" style="display:none">✅ Saved to dataset</span>
+        <span id="fieldPill"   class="pill" style="display:none;border-color:var(--teal-lt);color:var(--teal-lt)"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Batch panel (shown when files selected) -->
+  <div id="batchPanel" class="batch-panel" style="display:none">
+    <div class="batch-header">
+      <div class="card-title" style="margin-bottom:0">Batch Analysis Queue</div>
+      <span id="batchProgress" class="batch-progress"></span>
+    </div>
+    <div id="batchBarTrack" class="batch-bar-track" style="display:none"><div id="batchBarFill" class="batch-bar-fill"></div></div>
+    <div id="batchDropZone" class="batch-drop-zone" ondragover="event.preventDefault();this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')" ondrop="batchDrop(event)">
+      Drop more images here — or <label for="batchInput" class="link-btn">browse files</label>
+    </div>
+    <div id="batchList" class="batch-list"></div>
+    <div class="batch-actions">
+      <button id="batchRunBtn" class="btn-batch-run" onclick="runBatch()">▶ Analyze All</button>
+      <button class="btn-batch-clear" onclick="clearBatch()">✕ Clear</button>
+    </div>
+  </div>
+
+  <!-- Trend chart -->
+  <div id="trendSection" class="trend-card" style="display:none">
+    <div class="card-title">14-Day Activity Trend</div>
+    <div class="trend-canvas-wrap"><canvas id="trendChart"></canvas></div>
+  </div>
+
+  <!-- Zone dashboard -->
+  <div id="zoneDashboard" class="card" style="display:none">
+    <div class="history-header">
+      <div class="card-title" style="margin-bottom:0">Field Zone Overview</div>
+      <span style="font-size:.72rem;color:var(--grey)">Click zone to filter history</span>
+    </div>
+    <div id="zoneGrid" class="zone-grid"></div>
+  </div>
+
+  <!-- History -->
+  <div id="historySection" class="card" style="display:none">
+    <div class="history-header">
+      <div class="card-title" style="margin-bottom:0">Recent Field Scans <span id="historyCount" class="history-count"></span></div>
+    </div>
+    <div id="filterBar" class="filter-bar">
+      <label>From</label>
+      <input id="filterFrom" class="filter-input" type="date" />
+      <label>To</label>
+      <input id="filterTo" class="filter-input" type="date" />
+      <select id="filterIssue" class="filter-select">
+        <option value="">All issues</option>
+        <option value="pipe_leak">Pipe Leak</option>
+        <option value="clogged_emitter">Clogged Emitter</option>
+        <option value="broken_sprinkler">Broken Sprinkler</option>
+        <option value="pressure_problem">Pressure Problem</option>
+        <option value="pipe_damage">Pipe Damage</option>
+        <option value="filter_blockage">Filter Blockage</option>
+        <option value="turbid_water">Turbid Water</option>
+        <option value="algae_bloom">Algae Bloom</option>
+        <option value="contamination">Contamination</option>
+        <option value="salinity_stress">Salinity Stress</option>
+        <option value="pathogen_risk">Pathogen Risk</option>
+        <option value="dry_patch">Dry Patch</option>
+        <option value="waterlogging">Waterlogging</option>
+        <option value="uneven_distribution">Uneven Distribution</option>
+        <option value="wilting">Wilting</option>
+        <option value="overwatering_symptoms">Overwatering</option>
+        <option value="nutrient_deficiency">Nutrient Deficiency</option>
+        <option value="disease_pressure">Disease Pressure</option>
+      </select>
+      <button class="btn-filter primary" onclick="applyFilter()">Filter</button>
+      <button class="btn-filter" onclick="clearFilter()">Clear</button>
+      <span id="filterActiveBadge" class="filter-active-badge" style="display:none">Filtered</span>
+      <button class="btn-export" onclick="exportCSV()">⬇ CSV</button>
+      <button class="btn-print"  onclick="window.print()">🖨 Print</button>
+    </div>
+    <div id="historyList" class="history-list"></div>
+    <div id="historyEmpty" style="display:none;text-align:center;padding:36px 0;color:var(--dim);font-size:.85rem">
+      <div style="font-size:2rem;margin-bottom:10px">📭</div>
+      No scans yet — upload your first field image above.
+    </div>
+    <button id="loadMoreBtn" class="btn-load-more" style="display:none" onclick="loadMoreHistory()">Load more scans</button>
+  </div>
+
+</main>
+
+<footer>
+  AquaSense AI &nbsp;·&nbsp; Gemini 2.0 Flash Vision &nbsp;·&nbsp; Built for Agriculture
+  &nbsp;·&nbsp;
+  <a href="https://github.com/Adir-html/aqua-sense-ai" target="_blank" rel="noopener"
+     style="color:var(--teal);text-decoration:none" title="Star us on GitHub">⭐ Star on GitHub</a>
+  &nbsp;·&nbsp;
+  <a href="https://github.com/sponsors/Adir-html" target="_blank" rel="noopener"
+     style="color:#f472b6;text-decoration:none" title="Support this project">💖 Sponsor</a>
+</footer>
+
+<!-- Detail modal -->
+<div id="detailModal" class="modal-overlay" style="display:none" onclick="if(event.target===this)closeModal()">
+  <div class="modal-card">
+    <div class="modal-header">
+      <div class="modal-title">Scan Details</div>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"
+        onerror="window._chartJsFailed=true;console.warn('Chart.js CDN unavailable')"></script>
+<script src="./app.js" defer></script>
+<input id="batchInput" type="file" accept="image/*" multiple style="position:absolute;width:0;height:0;opacity:0;pointer-events:none" />
+</body>
+</html>

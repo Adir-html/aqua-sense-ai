@@ -1,0 +1,13 @@
+{
+  "name": "AquaSense AI",
+  "short_name": "AquaSense",
+  "description": "Agricultural irrigation and water quality monitor",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#080f1e",
+  "theme_color": "#00c9e8",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

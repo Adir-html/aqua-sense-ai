@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(pip install:*)",
+      "Bash(python -c \"import anthropic; print\\('anthropic', anthropic.__version__, 'OK'\\)\")",
+      "Bash(python -m uvicorn apps.api.app.main:app --port 8000)",
+      "Bash(curl -s http://localhost:8000/health)",
+      "Bash(curl -s http://localhost:8000/)",
+      "Bash(python -c ':*)",
+      "Bash(python -c \"import psycopg2; print\\('psycopg2', psycopg2.__version__\\)\")",
+      "Bash(python -c \"import psycopg2\")",
+      "Bash(pip show:*)",
+      "Bash(python -c \"import psycopg2; print\\('OK', psycopg2.__version__\\)\")",
+      "Bash(curl -s http://localhost:8000/api/stats)",
+      "Bash(curl -s http://localhost:8000/api/inference/health)"
+    ]
+  }
+}

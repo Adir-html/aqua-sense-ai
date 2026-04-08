@@ -1,0 +1,110 @@
+name: CI-CD
+
+# Tests on every push and PR.
+# Build + push Docker images only on push to main/master (not on PRs).
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_USER:     aqua
+          POSTGRES_PASSWORD: aqua
+          POSTGRES_DB:       aquasense
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U aqua"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      DATABASE_URL: postgresql://aqua:aqua@localhost:5432/aquasense
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r apps/api/requirements.txt
+          pip install pytest pytest-cov python-dotenv
+
+      - name: Run unit tests
+        working-directory: apps/api
+        run: pytest tests/test_analyze.py tests/test_analyze_integration.py -v --tb=short
+
+      - name: Run DB integration tests
+        run: pytest apps/api/tests/test_database_integration.py -v --tb=short
+
+  build_and_push:
+    needs: test
+    # Only build and push on actual pushes to main/master — skip on PRs
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push API image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./apps/api/Dockerfile
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/aqua-sense-api:latest
+            ghcr.io/${{ github.repository_owner }}/aqua-sense-api:${{ github.sha }}
+          cache-from: type=gha
+          cache-to:   type=gha,mode=max
+
+      - name: Build and push Web image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./apps/web
+          file: ./apps/web/Dockerfile
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/aqua-sense-web:latest
+            ghcr.io/${{ github.repository_owner }}/aqua-sense-web:${{ github.sha }}
+          cache-from: type=gha
+          cache-to:   type=gha,mode=max
+
+      # SSH auto-deploy step removed — add back when you have a production server.
+      # See docs/setup.md for deployment instructions.

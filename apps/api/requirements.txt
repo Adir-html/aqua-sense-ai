@@ -1,5 +1,14 @@
 fastapi
 uvicorn[standard]
 python-multipart
+python-dotenv
+requests
+psycopg2-binary
 
-# NOTE: Add additional dependencies as needed for AI and storage
+# Image processing
+pillow
+numpy
+
+# ONNX model inference
+onnxruntime
+

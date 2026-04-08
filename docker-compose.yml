@@ -1,38 +1,67 @@
-# Docker Compose configuration for local development
-version: '3.8'
-
 services:
-	web:
-		build:
-			context: ./apps/web
-		ports:
-			- "3000:80"
-		env_file:
-			- .env.example
-		depends_on:
-			- api
-		healthcheck:
-			test: ["CMD-SHELL", "curl -f http://127.0.0.1/health || exit 1"]
-			interval: 10s
-			timeout: 5s
-			retries: 3
-			start_period: 5s
 
-	api:
-		build:
-			context: ./apps/api
-		ports:
-			- "8000:8000"
-		env_file:
-			- .env.example
-		restart: unless-stopped
-		healthcheck:
-			test: ["CMD-SHELL", "python -c \"import urllib.request,sys;\ntry:\n r=urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=5)\n sys.exit(0 if r.getcode()==200 else 1)\nexcept:\n sys.exit(1)\n\""]
-			interval: 10s
-			timeout: 5s
-			retries: 5
-			start_period: 5s
+  db:
+    image: postgres:15-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER:     ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB:       ${POSTGRES_DB:-aquasense}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
-# Notes:
-# - For a simple local setup the AI code can run inside the API container.
-# - Use `docker compose up --build` to start everything.
+  api:
+    build:
+      context: .
+      dockerfile: ./apps/api/Dockerfile
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      - MODEL_PATH=/app/models/model.onnx
+      - MODEL_FRAMEWORK=onnx
+      - DATASET_PATH=/app/dataset
+      - DATABASE_URL=postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@db:5432/${POSTGRES_DB:-aquasense}
+    volumes:
+      - ./dataset:/app/dataset
+      - ./models:/app/models
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; r=urllib.request.urlopen('http://127.0.0.1:8000/health',timeout=5); sys.exit(0 if r.getcode()==200 else 1)\""]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+  web:
+    build:
+      context: ./apps/web
+    ports:
+      - "3000:80"
+    depends_on:
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://127.0.0.1/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+volumes:
+  db_data:
+
+# ── Usage ─────────────────────────────────────────────────────────────────────
+# 1. Copy .env.example to .env and fill in your API keys
+# 2. docker compose up --build
+# 3. Web UI:   http://localhost:3000
+#    API docs: http://localhost:8000/docs

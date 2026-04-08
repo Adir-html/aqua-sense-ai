@@ -1,0 +1,10 @@
+# Requirements for Vercel Python serverless function.
+# onnxruntime is intentionally excluded — too large for Vercel's 50 MB
+# compressed function limit. The app falls back to Gemini Vision API automatically.
+fastapi
+python-multipart
+python-dotenv
+requests
+psycopg2-binary
+pillow
+numpy

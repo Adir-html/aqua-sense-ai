@@ -1,0 +1,9 @@
+# GitHub Sponsors button configuration.
+# Replace placeholders with your actual account names.
+# See: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/displaying-a-sponsor-button-in-your-repository
+
+github:         [Adir-html]
+ko_fi:          YOUR_KO_FI_USERNAME
+open_collective: aqua-sense-ai
+# patreon:      YOUR_PATREON
+# custom:       ['https://your-donation-page.com']

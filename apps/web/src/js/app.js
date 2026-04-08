@@ -1,1 +1,0 @@
-// TODO: add main frontend logic (vanilla JS)

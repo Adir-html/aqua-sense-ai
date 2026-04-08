@@ -1,5 +1,40 @@
-# TODO: add ignore patterns
+# Environment
 .env
+*.env.local
+
+# Python
 __pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+venv/
+.venv/
+*.egg-info/
+dist/
+build/
+
+# Dataset — large image folders, do not commit
+dataset/
+models/model.onnx
+models/model.onnx.data
+
+# Node
 node_modules/
+
+# OS
 .DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Pytest / coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Logs
+*.log
