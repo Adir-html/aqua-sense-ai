@@ -72,8 +72,11 @@ DO $$ BEGIN
     ALTER TABLE analyses ADD COLUMN IF NOT EXISTS affected_area_pct  REAL DEFAULT 0;
     ALTER TABLE analyses ADD COLUMN IF NOT EXISTS water_waste_risk   TEXT;
     ALTER TABLE analyses ADD COLUMN IF NOT EXISTS crop_impact        TEXT;
+    ALTER TABLE analyses ADD COLUMN IF NOT EXISTS user_id            INTEGER REFERENCES users(id);
 EXCEPTION WHEN OTHERS THEN NULL;
 END $$;
+
+CREATE INDEX IF NOT EXISTS idx_analyses_user_id ON analyses (user_id);
 """
 
 _SELECT_COLS = """
@@ -175,6 +178,7 @@ def save_analysis(
     affected_area_pct: float = 0.0,
     water_waste_risk: Optional[str] = None,
     crop_impact: Optional[str] = None,
+    user_id: Optional[int] = None,
 ) -> Optional[int]:
     try:
         with _get_conn() as conn:
@@ -187,14 +191,14 @@ def save_analysis(
                         affected_area_pct, water_waste_risk, crop_impact,
                         message, recommendation, model_type,
                         faulty_probability, normal_probability,
-                        dataset_path, dataset_saved, image_data, created_at
+                        dataset_path, dataset_saved, image_data, created_at, user_id
                     ) VALUES (
                         %s,%s,%s,%s,%s,%s,
                         %s,%s,%s,%s,%s,
                         %s,%s,%s,
                         %s,%s,%s,
                         %s,%s,
-                        %s,%s,%s,%s
+                        %s,%s,%s,%s,%s
                     ) RETURNING id
                     """,
                     (
@@ -204,7 +208,7 @@ def save_analysis(
                         message, recommendation, model_type,
                         faulty_probability, normal_probability,
                         dataset_path, dataset_saved, image_data,
-                        datetime.now(timezone.utc),
+                        datetime.now(timezone.utc), user_id,
                     ),
                 )
                 row_id = cur.fetchone()[0]
@@ -240,12 +244,14 @@ def get_trend(days: int = 14) -> list:
         return []
 
 
-def get_zones() -> list:
+def get_zones(user_id: Optional[int] = None) -> list:
     """Return each unique field zone with its aggregated stats."""
     try:
+        user_filter = "AND user_id = %s" if user_id is not None else ""
+        params = (user_id,) if user_id is not None else ()
         with _get_conn() as conn:
             with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
-                cur.execute("""
+                cur.execute(f"""
                     SELECT
                         field_zone,
                         COUNT(*)                                          AS total,
@@ -256,13 +262,15 @@ def get_zones() -> list:
                         (
                             SELECT status FROM analyses a2
                             WHERE a2.field_zone = analyses.field_zone
+                            {user_filter}
                             ORDER BY created_at DESC LIMIT 1
                         ) AS latest_status
                     FROM analyses
                     WHERE field_zone IS NOT NULL AND field_zone <> ''
+                    {user_filter}
                     GROUP BY field_zone
                     ORDER BY MAX(created_at) DESC
-                """)
+                """, params + params)
                 rows = cur.fetchall()
         return [dict(r) for r in rows]
     except Exception as e:
@@ -272,11 +280,13 @@ def get_zones() -> list:
 
 def get_analyses(limit: int = 50, offset: int = 0, field_zone: Optional[str] = None,
                  date_from: Optional[str] = None, date_to: Optional[str] = None,
-                 issue_type: Optional[str] = None) -> list:
+                 issue_type: Optional[str] = None, user_id: Optional[int] = None) -> list:
     try:
         with _get_conn() as conn:
             with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
                 conditions, params = [], []
+                if user_id is not None:
+                    conditions.append("user_id = %s"); params.append(user_id)
                 if field_zone:
                     conditions.append("field_zone = %s"); params.append(field_zone)
                 if issue_type:
@@ -298,11 +308,15 @@ def get_analyses(limit: int = 50, offset: int = 0, field_zone: Optional[str] = N
         return []
 
 
-def get_stats(field_zone: Optional[str] = None) -> dict:
+def get_stats(field_zone: Optional[str] = None, user_id: Optional[int] = None) -> dict:
     """Summary statistics for the dashboard. Pass field_zone to scope to one zone."""
     try:
-        where = "WHERE field_zone = %s" if field_zone else ""
-        params = (field_zone,) if field_zone else ()
+        conditions, params = [], []
+        if user_id is not None:
+            conditions.append("user_id = %s"); params.append(user_id)
+        if field_zone:
+            conditions.append("field_zone = %s"); params.append(field_zone)
+        where = ("WHERE " + " AND ".join(conditions)) if conditions else ""
         with _get_conn() as conn:
             with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
                 cur.execute(f"""
@@ -318,7 +332,7 @@ def get_stats(field_zone: Optional[str] = None) -> dict:
                             FILTER (WHERE field_zone IS NOT NULL)        AS field_zones,
                         MAX(created_at)                                  AS last_analysis
                     FROM analyses {where}
-                """, params)
+                """, tuple(params))
                 row = cur.fetchone()
         return dict(row) if row else {}
     except Exception as e:

@@ -13,7 +13,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional, List
 
-from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Query
+from fastapi import APIRouter, Request, UploadFile, File, Form, HTTPException, Query
 from fastapi.responses import Response, StreamingResponse
 from pydantic import BaseModel
 
@@ -25,6 +25,19 @@ except ImportError:
 
 logger = logging.getLogger("inference_router")
 router = APIRouter()
+
+
+def _get_user_id(request) -> Optional[int]:
+    """Extract the current user's DB id from the session cookie, or None."""
+    try:
+        try:
+            from apps.api.app.routers.auth import get_current_user
+        except ImportError:
+            from app.routers.auth import get_current_user  # type: ignore[import]
+        user = get_current_user(request)
+        return user.get("id") if user else None
+    except Exception:
+        return None
 
 
 def _send_alert(filename: str, field_zone: Optional[str], result: dict) -> None:
@@ -128,6 +141,7 @@ class StatsResponse(BaseModel):
 
 @router.post("/analyze", response_model=AnalysisResponse)
 async def analyze_image(
+    request: Request,
     file: UploadFile = File(...),
     field_zone: Optional[str] = Form(None),
 ):
@@ -205,6 +219,7 @@ async def analyze_image(
             affected_area_pct  = float(result.get("affected_area_pct", 0.0)),
             water_waste_risk   = result.get("water_waste_risk"),
             crop_impact        = result.get("crop_impact"),
+            user_id            = _get_user_id(request),
         )
 
         response = AnalysisResponse(
@@ -256,6 +271,7 @@ async def analyze_image(
 
 @router.get("/analyses/export")
 async def export_analyses_csv(
+    request:    Request,
     field_zone: Optional[str] = None,
     date_from:  Optional[str] = Query(None, description="ISO date e.g. 2024-01-01"),
     date_to:    Optional[str] = Query(None, description="ISO date e.g. 2024-12-31"),
@@ -277,7 +293,8 @@ async def export_analyses_csv(
         raise HTTPException(status_code=422, detail="date_from must not be after date_to")
 
     _, get_fn, _, _, _, _, _, _, _ = _get_db()
-    rows = get_fn(limit=10000, field_zone=field_zone, date_from=date_from, date_to=date_to)
+    rows = get_fn(limit=10000, field_zone=field_zone, date_from=date_from, date_to=date_to,
+                  user_id=_get_user_id(request))
 
     out = io.StringIO()
     fields = ["id","created_at","filename","field_zone","status","issue_type","issue_category",
@@ -304,6 +321,7 @@ async def export_analyses_csv(
 
 @router.get("/analyses", response_model=List[AnalysisResponse])
 async def list_analyses(
+    request:    Request,
     limit:      int            = 20,
     offset:     int            = 0,
     field_zone: Optional[str]  = None,
@@ -326,6 +344,7 @@ async def list_analyses(
         limit=min(limit, 200), offset=max(offset, 0),
         field_zone=field_zone, issue_type=issue_type,
         date_from=date_from, date_to=date_to,
+        user_id=_get_user_id(request),
     )
     return [
         AnalysisResponse(
@@ -407,10 +426,10 @@ async def get_trend(days: int = 14):
 
 
 @router.get("/zones")
-async def list_zones():
+async def list_zones(request: Request):
     """Return each unique field zone with its aggregated stats."""
     _, _, _, _, _, _, _, zones_fn, _ = _get_db()
-    rows = zones_fn()
+    rows = zones_fn(user_id=_get_user_id(request))
     return [
         {
             "field_zone":    r["field_zone"],
@@ -426,9 +445,9 @@ async def list_zones():
 
 
 @router.get("/stats", response_model=StatsResponse)
-async def get_stats(field_zone: Optional[str] = None):
+async def get_stats(request: Request, field_zone: Optional[str] = None):
     _, _, stats_fn, _, _, _, _, _, _ = _get_db()
-    s = stats_fn(field_zone=field_zone)
+    s = stats_fn(field_zone=field_zone, user_id=_get_user_id(request))
     return StatsResponse(
         total            = s.get("total", 0) or 0,
         critical         = s.get("critical", 0) or 0,
