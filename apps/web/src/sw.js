@@ -4,7 +4,7 @@
  * API calls always go to the network; only static assets are cached.
  */
 
-const CACHE = "aquasense-v13";
+const CACHE = "aquasense-v14";
 const SHELL = ["/", "/app.js", "/manifest.json"];
 
 self.addEventListener("install", e => {
@@ -24,13 +24,21 @@ self.addEventListener("activate", e => {
 self.addEventListener("fetch", e => {
   const url = new URL(e.request.url);
 
-  // Always fetch API calls from network — never serve stale analysis data
-  if (url.pathname.startsWith("/api/")) {
-    e.respondWith(fetch(e.request));
+  // Always fetch API and auth calls from network — never cache user-specific data
+  if (url.pathname.startsWith("/api/") || url.pathname.startsWith("/auth/")) {
+    // Pass through with original request (preserves cookies) and bypass HTTP cache
+    e.respondWith(
+      fetch(e.request, { cache: "no-store" }).catch(() =>
+        new Response(JSON.stringify({ detail: "Offline" }), {
+          status: 503,
+          headers: { "Content-Type": "application/json" },
+        })
+      )
+    );
     return;
   }
 
-  // Cache-first for static shell assets
+  // Cache-first for static shell assets only
   e.respondWith(
     caches.match(e.request).then(cached => cached || fetch(e.request).then(resp => {
       if (resp.ok && e.request.method === "GET") {
