@@ -4,7 +4,7 @@
  * API calls always go to the network; only static assets are cached.
  */
 
-const CACHE = "aquasense-v12";
+const CACHE = "aquasense-v13";
 const SHELL = ["/", "/app.js", "/manifest.json"];
 
 self.addEventListener("install", e => {

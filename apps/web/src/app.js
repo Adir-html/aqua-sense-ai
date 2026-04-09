@@ -919,6 +919,8 @@ async function checkHealth() {
 
 // ── Public scan counter ───────────────────────────────────────────────────────
 async function loadPublicStats() {
+  // Only show the public counter when logged in and has meaningful data
+  if (!_currentUser) { if (scanCounter) scanCounter.style.display = "none"; return; }
   try {
     const d = await fetch(API_PUBLIC_STATS).then(r => r.ok ? r.json() : null);
     if (!d || !d.total_analyses) return;
@@ -953,6 +955,7 @@ async function checkAuth() {
   loadHistory();
   loadTrend();
   loadZoneAutocomplete();
+  loadPublicStats();
 }
 
 function _renderAuthArea(loggedIn) {
