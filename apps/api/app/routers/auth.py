@@ -74,13 +74,22 @@ def get_current_user(request: Request) -> Optional[dict]:
     """Extract and validate the session cookie. Returns user dict or None."""
     _, _, secret_key, _ = _cfg()
     if not secret_key:
+        logger.warning("get_current_user: SECRET_KEY not set — all requests treated as anonymous")
         return None
     token = request.cookies.get(_COOKIE_NAME)
     if not token:
         return None
     try:
-        return _serializer(secret_key).loads(token, max_age=_COOKIE_MAX_AGE)
-    except (BadSignature, SignatureExpired):
+        data = _serializer(secret_key).loads(token, max_age=_COOKIE_MAX_AGE)
+        if not isinstance(data, dict) or "id" not in data:
+            logger.warning("get_current_user: cookie payload missing 'id' field")
+            return None
+        return data
+    except (BadSignature, SignatureExpired) as e:
+        logger.debug(f"get_current_user: invalid/expired cookie — {e}")
+        return None
+    except Exception as e:
+        logger.warning(f"get_current_user: unexpected error decoding cookie — {e}")
         return None
 
 

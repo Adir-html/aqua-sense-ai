@@ -27,6 +27,11 @@ logger = logging.getLogger("inference_router")
 router = APIRouter()
 
 
+def _auth_enabled() -> bool:
+    """Return True when Google OAuth is configured (production mode)."""
+    return bool(os.environ.get("GOOGLE_CLIENT_ID", "").strip())
+
+
 def _get_user_id(request) -> Optional[int]:
     """Extract the current user's DB id from the session cookie, or None."""
     try:
@@ -35,8 +40,11 @@ def _get_user_id(request) -> Optional[int]:
         except ImportError:
             from app.routers.auth import get_current_user  # type: ignore[import]
         user = get_current_user(request)
-        return user.get("id") if user else None
-    except Exception:
+        uid = user.get("id") if user else None
+        logger.debug(f"_get_user_id: uid={uid} cookies={list(request.cookies.keys())}")
+        return uid
+    except Exception as e:
+        logger.warning(f"_get_user_id failed: {e}")
         return None
 
 
@@ -292,9 +300,15 @@ async def export_analyses_csv(
     if date_from and date_to and date_from > date_to:
         raise HTTPException(status_code=422, detail="date_from must not be after date_to")
 
+    user_id = _get_user_id(request)
+    if _auth_enabled() and user_id is None:
+        from fastapi.responses import StreamingResponse as _SR
+        return _SR(iter([""]), media_type="text/csv",
+                   headers={"Content-Disposition": 'attachment; filename="empty.csv"'})
+
     _, get_fn, _, _, _, _, _, _, _ = _get_db()
     rows = get_fn(limit=10000, field_zone=field_zone, date_from=date_from, date_to=date_to,
-                  user_id=_get_user_id(request))
+                  user_id=user_id)
 
     out = io.StringIO()
     fields = ["id","created_at","filename","field_zone","status","issue_type","issue_category",
@@ -339,12 +353,16 @@ async def list_analyses(
     if date_from and date_to and date_from > date_to:
         raise HTTPException(status_code=422, detail="date_from must not be after date_to")
 
+    user_id = _get_user_id(request)
+    if _auth_enabled() and user_id is None:
+        return []
+
     _, get_fn, _, _, _, _, _, _, _ = _get_db()
     rows = get_fn(
         limit=min(limit, 200), offset=max(offset, 0),
         field_zone=field_zone, issue_type=issue_type,
         date_from=date_from, date_to=date_to,
-        user_id=_get_user_id(request),
+        user_id=user_id,
     )
     return [
         AnalysisResponse(
@@ -428,8 +446,11 @@ async def get_trend(days: int = 14):
 @router.get("/zones")
 async def list_zones(request: Request):
     """Return each unique field zone with its aggregated stats."""
+    user_id = _get_user_id(request)
+    if _auth_enabled() and user_id is None:
+        return []
     _, _, _, _, _, _, _, zones_fn, _ = _get_db()
-    rows = zones_fn(user_id=_get_user_id(request))
+    rows = zones_fn(user_id=user_id)
     return [
         {
             "field_zone":    r["field_zone"],
@@ -446,8 +467,11 @@ async def list_zones(request: Request):
 
 @router.get("/stats", response_model=StatsResponse)
 async def get_stats(request: Request, field_zone: Optional[str] = None):
+    user_id = _get_user_id(request)
+    if _auth_enabled() and user_id is None:
+        return StatsResponse()
     _, _, stats_fn, _, _, _, _, _, _ = _get_db()
-    s = stats_fn(field_zone=field_zone, user_id=_get_user_id(request))
+    s = stats_fn(field_zone=field_zone, user_id=user_id)
     return StatsResponse(
         total            = s.get("total", 0) or 0,
         critical         = s.get("critical", 0) or 0,
@@ -459,6 +483,21 @@ async def get_stats(request: Request, field_zone: Optional[str] = None):
         field_zones      = s.get("field_zones", 0) or 0,
         last_analysis    = s["last_analysis"].isoformat() if s.get("last_analysis") else None,
     )
+
+
+@router.get("/debug/auth")
+async def debug_auth(request: Request):
+    """Temporary debug endpoint — shows auth state for troubleshooting."""
+    user_id = _get_user_id(request)
+    return {
+        "auth_enabled":       _auth_enabled(),
+        "cookies_received":   list(request.cookies.keys()),
+        "aq_session_present": "aq_session" in request.cookies,
+        "user_id":            user_id,
+        "authenticated":      user_id is not None,
+        "secret_key_set":     bool(os.environ.get("SECRET_KEY", "")),
+        "google_client_set":  bool(os.environ.get("GOOGLE_CLIENT_ID", "")),
+    }
 
 
 @router.get("/stats/public")

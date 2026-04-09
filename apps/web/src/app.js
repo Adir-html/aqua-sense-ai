@@ -636,7 +636,14 @@ function renderHistory(rows = [], append = false) {
   if (!append) {
     historyList.innerHTML      = rows.length ? rows.map(_historyItemHTML).join("") : "";
     historyList.style.display  = rows.length ? "flex" : "none";
-    historyEmpty.style.display = rows.length ? "none" : "block";
+    if (!rows.length) {
+      historyEmpty.style.display = "block";
+      if (!_currentUser) {
+        historyEmpty.innerHTML = `<p>🔒 <a href="${API_AUTH_LOGIN}" style="color:var(--blue)">Sign in with Google</a> to see your scan history.</p>`;
+      }
+    } else {
+      historyEmpty.style.display = "none";
+    }
     const count = historyList.querySelectorAll(".history-item").length;
     if (historyCount) historyCount.textContent = count ? `(${count}${rows.length >= HISTORY_PAGE ? "+" : ""})` : "";
   } else {
@@ -935,11 +942,18 @@ async function checkAuth() {
       _currentUser = await r.json();
       _renderAuthArea(true);
     } else {
+      _currentUser = null;
       _renderAuthArea(false);
     }
   } catch {
+    _currentUser = null;
     _renderAuthArea(false);
   }
+  // Reload data now that we know auth state
+  loadHistory();
+  loadStats();
+  loadZones();
+  loadTrend();
 }
 
 function _renderAuthArea(loggedIn) {
