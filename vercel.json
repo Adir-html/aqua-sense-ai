@@ -1,7 +1,7 @@
 {
   "version": 2,
-  "buildCommand": null,
-  "outputDirectory": "apps/web/src",
+  "buildCommand": "cp -r apps/web/src/. public/",
+  "outputDirectory": "public",
   "functions": {
     "api/index.py": {
       "maxDuration": 30
