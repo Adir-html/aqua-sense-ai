@@ -487,16 +487,38 @@ async def get_stats(request: Request, field_zone: Optional[str] = None):
 
 @router.get("/debug/auth")
 async def debug_auth(request: Request):
-    """Temporary debug endpoint — shows auth state for troubleshooting."""
+    """Temporary debug endpoint — shows auth state and DB isolation status."""
     user_id = _get_user_id(request)
+
+    # Check DB directly to see actual user_id distribution
+    db_info = {}
+    try:
+        try:
+            from apps.api.app.database import _get_conn
+        except ImportError:
+            from app.database import _get_conn  # type: ignore[import]
+        with _get_conn() as conn:
+            with conn.cursor() as cur:
+                cur.execute("SELECT COUNT(*) FROM analyses")
+                db_info["total_analyses"] = cur.fetchone()[0]
+                cur.execute("SELECT COUNT(*) FROM analyses WHERE user_id IS NULL")
+                db_info["analyses_no_user"] = cur.fetchone()[0]
+                cur.execute("SELECT COUNT(*) FROM analyses WHERE user_id IS NOT NULL")
+                db_info["analyses_with_user"] = cur.fetchone()[0]
+                if user_id is not None:
+                    cur.execute("SELECT COUNT(*) FROM analyses WHERE user_id = %s", (user_id,))
+                    db_info["analyses_for_you"] = cur.fetchone()[0]
+                cur.execute("SELECT COUNT(*) FROM users")
+                db_info["total_users"] = cur.fetchone()[0]
+    except Exception as e:
+        db_info["error"] = str(e)
+
     return {
         "auth_enabled":       _auth_enabled(),
-        "cookies_received":   list(request.cookies.keys()),
-        "aq_session_present": "aq_session" in request.cookies,
         "user_id":            user_id,
         "authenticated":      user_id is not None,
         "secret_key_set":     bool(os.environ.get("SECRET_KEY", "")),
-        "google_client_set":  bool(os.environ.get("GOOGLE_CLIENT_ID", "")),
+        "db":                 db_info,
     }
 
 
