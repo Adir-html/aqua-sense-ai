@@ -216,7 +216,19 @@ class SimpleRateLimitMiddleware(BaseHTTPMiddleware):
         return response
 
 
+class NoCacheAPIMiddleware(BaseHTTPMiddleware):
+    """Add no-cache headers to all /api/* and /auth/* responses to prevent CDN caching of user data."""
+    async def dispatch(self, request: Request, call_next):
+        response = await call_next(request)
+        path = request.url.path
+        if path.startswith("/api/") or path.startswith("/auth/"):
+            response.headers["Cache-Control"] = "no-store, no-cache, must-revalidate, max-age=0"
+            response.headers["Pragma"] = "no-cache"
+        return response
+
+
 # Add middleware
+app.add_middleware(NoCacheAPIMiddleware)
 app.add_middleware(APIKeyAuthMiddleware)
 app.add_middleware(SimpleRateLimitMiddleware)
 
