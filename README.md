@@ -23,7 +23,7 @@
 
 ## 🎥 Demo
 
-> **[➡ Try the live demo](https://aqua-sense-ai.vercel.app)** · [Watch 60-second walkthrough](#)
+> **[➡ Try the live demo](https://aqua-sense-ai-two.vercel.app)** · [Watch 60-second walkthrough](#)
 
 ![AquaSense AI Dashboard](docs/screenshot.png)
 
