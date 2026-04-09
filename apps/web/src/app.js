@@ -275,7 +275,7 @@ async function runAnalysis() {
   if (zone) fd.append("field_zone", zone);
 
   try {
-    const res = await fetch(API_ANALYZE, { method:"POST", body:fd });
+    const res = await apiFetch(API_ANALYZE, { method:"POST", body:fd });
     if (!res.ok) {
       let msg = `Server error ${res.status}`;
       try { const body = await res.text(); msg = JSON.parse(body).detail || body || msg; } catch {}
@@ -403,7 +403,7 @@ function _animateCount(el, target, duration = 600) {
 async function loadStats(zone) {
   try {
     const url = zone ? `${API_STATS}?field_zone=${encodeURIComponent(zone)}` : API_STATS;
-    const data = await fetch(url).then(r => r.json());
+    const data = await apiFetch(url).then(r => r.json());
     _animateCount(statCritical, data.critical ?? 0);
     _animateCount(statWarning,  data.warning  ?? 0);
     _animateCount(statHealthy,  data.healthy  ?? 0);
@@ -414,7 +414,7 @@ async function loadStats(zone) {
 // ── Zone dashboard ────────────────────────────────────────────────────────────
 async function loadZones() {
   try {
-    const rows = await fetch(API_ZONES).then(r => r.ok ? r.json() : []);
+    const rows = await apiFetch(API_ZONES).then(r => r.ok ? r.json() : []);
     if (!rows.length) { zoneDashboard.style.display = "none"; return; }
     zoneDashboard.style.display = "block";
     zoneGrid.innerHTML = rows.map(z => {
@@ -455,7 +455,7 @@ function filterByZone(zone) {
 // ── Zone autocomplete ─────────────────────────────────────────────────────────
 async function loadZoneAutocomplete() {
   try {
-    const remote = await fetch(API_ZONES).then(r => r.ok ? r.json() : []);
+    const remote = await apiFetch(API_ZONES).then(r => r.ok ? r.json() : []);
     const remoteNames = remote.map(z => z.field_zone).filter(Boolean);
     // Merge with localStorage but drop any zones no longer on the server
     const stored = JSON.parse(localStorage.getItem("aq_zones") || "[]");
@@ -490,7 +490,7 @@ async function loadTrend() {
     return;
   }
   try {
-    const rows = await fetch(API_TREND + "?days=14").then(r => r.ok ? r.json() : []);
+    const rows = await apiFetch(API_TREND + "?days=14").then(r => r.ok ? r.json() : []);
     if (!rows.length) return;
     trendSection.style.display = "block";
     const labels   = rows.map(r => r.day.slice(5));
@@ -568,7 +568,7 @@ async function _fetchHistory(offset) {
   if (_historyDateTo)    url += `&date_to=${_historyDateTo}`;
   if (_historyIssueType) url += `&issue_type=${encodeURIComponent(_historyIssueType)}`;
   if (_historyZoneFilter)url += `&field_zone=${encodeURIComponent(_historyZoneFilter)}`;
-  const res = await fetch(url);
+  const res = await apiFetch(url);
   if (!res.ok) return [];
   return res.json();
 }
@@ -651,7 +651,7 @@ async function deleteScan(id, btn) {
   if (!confirm("Delete this scan permanently?")) return;
   btn.disabled = true;
   try {
-    const r = await fetch(API_DELETE(id), { method:"DELETE" });
+    const r = await apiFetch(API_DELETE(id), { method:"DELETE" });
     if (r.ok || r.status === 204) {
       btn.closest(".history-item").remove();
       loadStats(); loadTrend(); loadZones();
@@ -679,7 +679,7 @@ async function openModal(id) {
   body.innerHTML = `<div style="text-align:center;padding:40px;color:var(--grey)">Loading…</div>`;
 
   try {
-    const resp = await fetch(`${API_HISTORY}/${id}`);
+    const resp = await apiFetch(`${API_HISTORY}/${id}`);
     if (!resp.ok) { body.innerHTML = `<p style="color:var(--red);padding:20px">Record not found.</p>`; return; }
     const r = await resp.json();
 
@@ -821,7 +821,7 @@ async function runBatch() {
         const compressed = await compressIfNeeded(_batchFiles[i]);
         fd.append("file", compressed, compressed.name || _batchFiles[i].name);
         if (zone) fd.append("field_zone", zone);
-        const res  = await fetch(API_ANALYZE, { method:"POST", body:fd });
+        const res  = await apiFetch(API_ANALYZE, { method:"POST", body:fd });
         if (!res.ok) throw new Error(`Server error ${res.status}`);
         const data = await res.json();
         const s    = data.status || "unknown";
@@ -890,7 +890,12 @@ function _maybeSendNotification(data) {
 function _fetchWithTimeout(url, options = {}, ms = 5000) {
   const ctrl  = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), ms);
-  return fetch(url, { ...options, signal:ctrl.signal }).finally(() => clearTimeout(timer));
+  return fetch(url, { credentials:"include", ...options, signal:ctrl.signal }).finally(() => clearTimeout(timer));
+}
+
+/** Wrapper that always sends the session cookie. */
+function apiFetch(url, options = {}) {
+  return fetch(url, { credentials:"include", ...options });
 }
 
 async function checkHealth() {
