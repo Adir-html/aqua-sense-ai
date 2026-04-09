@@ -149,7 +149,12 @@ def init_db() -> None:
         with _get_conn() as conn:
             with conn.cursor() as cur:
                 cur.execute(_DDL)
+                # Clean up orphaned analyses that predate user auth
+                cur.execute("DELETE FROM analyses WHERE user_id IS NULL")
+                deleted = cur.rowcount
             conn.commit()
+        if deleted:
+            logger.info(f"PostgreSQL: removed {deleted} orphaned analyses (no user_id)")
         logger.info("PostgreSQL: tables ready")
     except Exception as e:
         logger.warning(f"PostgreSQL init failed: {e}")
