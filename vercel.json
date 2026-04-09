@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "buildCommand": "cp -r apps/web/src/. public/",
+  "buildCommand": "mkdir -p public && cp -r apps/web/src/. public/",
   "outputDirectory": "public",
   "functions": {
     "api/index.py": {
