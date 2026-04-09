@@ -72,6 +72,20 @@
     .btn-notif:hover      { border-color:var(--teal); color:var(--teal); }
     .btn-notif.active     { border-color:var(--green); color:var(--green); }
 
+    /* ── Auth ── */
+    .btn-google { display:inline-flex; align-items:center; gap:8px; font-size:.72rem; padding:6px 14px; border-radius:999px; border:1px solid var(--border2); background:transparent; color:var(--white); cursor:pointer; transition:all .25s; text-decoration:none; white-space:nowrap; }
+    .btn-google:hover { border-color:var(--teal); background:var(--teal-dim); }
+    .user-avatar { width:24px; height:24px; border-radius:50%; border:1px solid var(--border2); object-fit:cover; }
+    .user-menu { display:inline-flex; align-items:center; gap:8px; font-size:.72rem; color:var(--grey); }
+    .btn-signout { font-size:.68rem; padding:4px 10px; border-radius:999px; border:1px solid var(--border2); background:transparent; color:var(--dim); cursor:pointer; transition:all .2s; }
+    .btn-signout:hover { border-color:var(--red); color:var(--red); }
+
+    /* ── Scan counter banner ── */
+    .scan-counter { display:flex; align-items:center; justify-content:center; gap:16px; background:linear-gradient(135deg,#061220,#0a1e38); border:1px solid var(--border); border-radius:var(--r); padding:14px 24px; font-size:.82rem; color:var(--grey); flex-wrap:wrap; }
+    .scan-counter-num { font-size:1.6rem; font-weight:800; color:var(--teal); line-height:1; }
+    .scan-counter-item { display:flex; flex-direction:column; align-items:center; gap:3px; }
+    .scan-counter-lbl { font-size:.62rem; text-transform:uppercase; letter-spacing:.6px; color:var(--dim); }
+
     /* ── Layout ── */
     main { max-width:1040px; margin:0 auto; padding:28px 20px 80px; display:flex; flex-direction:column; gap:22px; }
 
@@ -390,11 +404,23 @@
     <div class="header-right">
       <button id="notifBtn" class="btn-notif" onclick="toggleNotifications()">🔔 Alerts</button>
       <div id="engineBadge" class="engine-badge">Connecting…</div>
+      <div id="authArea"></div>
     </div>
   </div>
 </header>
 
 <main>
+
+  <!-- Public scan counter -->
+  <div id="scanCounter" class="scan-counter" style="display:none">
+    <div class="scan-counter-item"><span id="scTotal" class="scan-counter-num">—</span><span class="scan-counter-lbl">Analyses Run</span></div>
+    <div style="color:var(--border2)">|</div>
+    <div class="scan-counter-item"><span id="scCritical" class="scan-counter-num" style="color:var(--red)">—</span><span class="scan-counter-lbl">Issues Found</span></div>
+    <div style="color:var(--border2)">|</div>
+    <div class="scan-counter-item"><span id="scHealthy" class="scan-counter-num" style="color:var(--green)">—</span><span class="scan-counter-lbl">Healthy Fields</span></div>
+    <div style="color:var(--border2)">|</div>
+    <div class="scan-counter-item"><span id="scZones" class="scan-counter-num" style="color:var(--purple)">—</span><span class="scan-counter-lbl">Zones Tracked</span></div>
+  </div>
 
   <!-- Stats row -->
   <div class="stats-bar">

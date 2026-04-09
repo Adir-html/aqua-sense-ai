@@ -45,8 +45,10 @@ else:
 # Import routers — try local dev path first (IDE-friendly), fall back to Docker path
 try:
     from apps.api.app.routers import health
+    from apps.api.app.routers import auth as auth_router
 except ImportError:
     from app.routers import health  # type: ignore[import]  # Docker path
+    from app.routers import auth as auth_router  # type: ignore[import]
 
 try:
     from src.api.inference_router import router as inference_router
@@ -221,6 +223,7 @@ app.add_middleware(SimpleRateLimitMiddleware)
 # Include routers
 app.include_router(health.router, prefix="", tags=["health"])
 app.include_router(inference_router, prefix="/api", tags=["inference"])
+app.include_router(auth_router.router, tags=["auth"])
 
 
 @app.get("/")

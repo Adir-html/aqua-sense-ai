@@ -13,3 +13,7 @@ numpy
 # ONNX model inference
 onnxruntime
 
+# Auth (Google OAuth + JWT session cookies)
+authlib
+itsdangerous
+

@@ -18,6 +18,16 @@ import psycopg2.pool
 logger = logging.getLogger(__name__)
 
 _DDL = """
+CREATE TABLE IF NOT EXISTS users (
+    id          SERIAL PRIMARY KEY,
+    google_id   TEXT UNIQUE NOT NULL,
+    email       TEXT UNIQUE NOT NULL,
+    name        TEXT,
+    picture     TEXT,
+    created_at  TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    last_login  TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
 CREATE TABLE IF NOT EXISTS analyses (
     id                  SERIAL PRIMARY KEY,
     filename            TEXT        NOT NULL,
@@ -342,6 +352,65 @@ def get_image(analysis_id: int) -> Optional[bytes]:
     except Exception as e:
         logger.warning(f"DB image fetch failed: {e}")
         return None
+
+
+def upsert_user(google_id: str, email: str, name: Optional[str], picture: Optional[str]) -> Optional[dict]:
+    """Insert or update a user from Google OAuth. Returns the user row."""
+    try:
+        with _get_conn() as conn:
+            with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+                cur.execute("""
+                    INSERT INTO users (google_id, email, name, picture, last_login)
+                    VALUES (%s, %s, %s, %s, NOW())
+                    ON CONFLICT (google_id) DO UPDATE
+                        SET email      = EXCLUDED.email,
+                            name       = EXCLUDED.name,
+                            picture    = EXCLUDED.picture,
+                            last_login = NOW()
+                    RETURNING id, google_id, email, name, picture, created_at, last_login
+                """, (google_id, email, name, picture))
+                row = cur.fetchone()
+            conn.commit()
+        return dict(row) if row else None
+    except Exception as e:
+        logger.warning(f"DB upsert_user failed: {e}")
+        return None
+
+
+def get_user_by_id(user_id: int) -> Optional[dict]:
+    try:
+        with _get_conn() as conn:
+            with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+                cur.execute(
+                    "SELECT id, google_id, email, name, picture, created_at FROM users WHERE id = %s",
+                    (user_id,)
+                )
+                row = cur.fetchone()
+        return dict(row) if row else None
+    except Exception as e:
+        logger.warning(f"DB get_user_by_id failed: {e}")
+        return None
+
+
+def get_public_stats() -> dict:
+    """Lightweight stats for the public homepage counter — no auth required."""
+    try:
+        with _get_conn() as conn:
+            with conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+                cur.execute("""
+                    SELECT
+                        COUNT(*)                                      AS total_analyses,
+                        COUNT(*) FILTER (WHERE status = 'critical')   AS critical,
+                        COUNT(*) FILTER (WHERE status = 'healthy')    AS healthy,
+                        COUNT(DISTINCT field_zone)
+                            FILTER (WHERE field_zone IS NOT NULL)     AS zones_monitored
+                    FROM analyses
+                """)
+                row = cur.fetchone()
+        return dict(row) if row else {"total_analyses": 0, "critical": 0, "healthy": 0, "zones_monitored": 0}
+    except Exception as e:
+        logger.warning(f"DB public_stats failed: {e}")
+        return {"total_analyses": 0, "critical": 0, "healthy": 0, "zones_monitored": 0}
 
 
 def delete_analysis(analysis_id: int) -> bool:

@@ -442,6 +442,19 @@ async def get_stats(field_zone: Optional[str] = None):
     )
 
 
+@router.get("/stats/public")
+async def get_public_stats():
+    """Open stats endpoint — no auth required. Used for the homepage scan counter."""
+    try:
+        try:
+            from apps.api.app.database import get_public_stats
+        except ImportError:
+            from app.database import get_public_stats  # type: ignore[import]
+        return get_public_stats()
+    except Exception:
+        return {"total_analyses": 0, "critical": 0, "healthy": 0, "zones_monitored": 0}
+
+
 @router.get("/analyses/{analysis_id}/image")
 async def get_analysis_image(analysis_id: int):
     _, _, _, img_fn, _, _, _, _, _ = _get_db()

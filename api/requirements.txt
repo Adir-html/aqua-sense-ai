@@ -5,6 +5,9 @@ fastapi
 python-multipart
 python-dotenv
 requests
+httpx
 psycopg2-binary
 pillow
 numpy
+authlib
+itsdangerous
