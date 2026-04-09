@@ -156,13 +156,8 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   checkHealth();
-  loadStats();
-  loadZones();
-  loadHistory();
-  loadTrend();
-  loadZoneAutocomplete();
   loadPublicStats();
-  checkAuth();
+  checkAuth(); // Auth first — data loads inside checkAuth once state is known
 
   // Handle auth redirect result (?auth=success or ?auth_error=...)
   const _params = new URLSearchParams(location.search);
@@ -404,6 +399,9 @@ async function loadStats(zone) {
   try {
     const url = zone ? `${API_STATS}?field_zone=${encodeURIComponent(zone)}` : API_STATS;
     const data = await apiFetch(url).then(r => r.json());
+    const statsBar = document.getElementById("statsBar");
+    if (!_currentUser) { if (statsBar) statsBar.style.display = "none"; return; }
+    if (statsBar) statsBar.style.display = "";
     _animateCount(statCritical, data.critical ?? 0);
     _animateCount(statWarning,  data.warning  ?? 0);
     _animateCount(statHealthy,  data.healthy  ?? 0);
@@ -949,11 +947,12 @@ async function checkAuth() {
     _currentUser = null;
     _renderAuthArea(false);
   }
-  // Reload data now that we know auth state
-  loadHistory();
+  // Load all data now that auth state is known
   loadStats();
   loadZones();
+  loadHistory();
   loadTrend();
+  loadZoneAutocomplete();
 }
 
 function _renderAuthArea(loggedIn) {
