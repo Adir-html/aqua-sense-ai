@@ -513,12 +513,36 @@ async def debug_auth(request: Request):
     except Exception as e:
         db_info["error"] = str(e)
 
+    # Show what /api/analyses returns for this user AND what's actually in the DB
+    analyses_preview = []
+    try:
+        try:
+            from apps.api.app.database import _get_conn as _gc
+        except ImportError:
+            from app.database import _get_conn as _gc  # type: ignore[import]
+        import psycopg2.extras as _extras
+        with _gc() as conn:
+            with conn.cursor(cursor_factory=_extras.RealDictCursor) as cur:
+                # All rows with their actual user_id
+                cur.execute("SELECT id, filename, user_id FROM analyses ORDER BY id DESC LIMIT 10")
+                all_rows = [dict(r) for r in cur.fetchall()]
+                # What this user would see
+                if user_id is not None:
+                    cur.execute("SELECT id, filename, user_id FROM analyses WHERE user_id = %s LIMIT 5", (user_id,))
+                else:
+                    cur.execute("SELECT id, filename, user_id FROM analyses LIMIT 5")
+                my_rows = [dict(r) for r in cur.fetchall()]
+        analyses_preview = {"all_in_db": all_rows, "visible_to_you": my_rows}
+    except Exception as e:
+        analyses_preview = {"error": str(e)}
+
     return {
         "auth_enabled":       _auth_enabled(),
         "user_id":            user_id,
         "authenticated":      user_id is not None,
         "secret_key_set":     bool(os.environ.get("SECRET_KEY", "")),
         "db":                 db_info,
+        "analyses_you_would_see": analyses_preview,
     }
 
 
