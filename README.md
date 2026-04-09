@@ -187,6 +187,7 @@ AquaSense AI is free and open source. If it helps you or you believe in its miss
 - ☕ **[Buy me a coffee](https://ko-fi.com/aidwithadir)** — one-time support
 - 📢 **Share it** — post on LinkedIn, Reddit, or with your agricultural network
 - 🤝 **Partner with us** — if you're an agricultural organization or NGO, let's talk
+- ☕ Support the project: https://ko-fi.com/aidwithadir
 
 Funds go toward: cloud hosting for the live demo, training data labeling, and development time for features that benefit smallholder farmers.
 
